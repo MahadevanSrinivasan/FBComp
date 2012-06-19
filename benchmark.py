@@ -2,7 +2,6 @@
 
 from collections import deque, defaultdict
 import utilities
-import csv
 import time
 import cPickle as pickle
 from operator import itemgetter
@@ -27,6 +26,9 @@ def naive_search(graph, reversegraph, node, num_nodes):
         if neighbor in visited:
             visited.remove(neighbor) 
     
+    if not neighbors:
+        neighbors = set(visited)
+    
     if neighbors:
         small_graph = dict((k, graph[k]) for k in neighbors)
         listofallpossibilities = [item for sublist in small_graph.values() for item in sublist]
@@ -46,7 +48,6 @@ def naive_search(graph, reversegraph, node, num_nodes):
         for i,j in sorted_list:
             if len(visited)<num_nodes:
                 visited.append(i)
-    
     ulist = []
     [ulist.append(x) for x in visited if x not in ulist]
     return ulist
@@ -57,14 +58,6 @@ def loadgraphfrompickle(filename):
     pkl_file.close()
     return graph
     
-def writegraphtotextfile(filename, graph):
-    write_file = open(filename, "wb")
-    writer = csv.writer(write_file)
-    for source_node, dest_nodes in graph.iteritems():
-        writer.writerow([str(source_node),
-                         " ".join([str(n) for n in dest_nodes])])
-    write_file.close()
-    
 def naive_benchmark(train_file, test_file, submission_file, num_predictions):
     """
     Runs the breadth-first search benchmark.
@@ -73,10 +66,6 @@ def naive_benchmark(train_file, test_file, submission_file, num_predictions):
     start_time = time.time()
     (graph, reversegraph) = utilities.read_graph(train_file)
     print "Graph forming time = ", time.time() - start_time, "seconds"
-    start_time = time.time()
-    writegraphtotextfile("graph.csv", graph)
-    writegraphtotextfile("reversegraph.csv", reversegraph)
-    print "Graphs writing time = ", time.time() - start_time, "seconds"
     start_time = time.time()
     test_nodes = utilities.read_nodes_list(test_file)
     test_predictions = [naive_search(graph, reversegraph, node, num_predictions)
@@ -92,5 +81,5 @@ def naive_benchmark(train_file, test_file, submission_file, num_predictions):
 if __name__=="__main__":
     naive_benchmark("../Data/train.csv",
                   "../Data/test.csv",
-                  "../Submissions/missinglinks_rankedlist.csv",
+                  "../Submissions/missinglinks_rankedlist_bothways.csv",
                   10)
