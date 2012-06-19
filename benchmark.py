@@ -1,47 +1,54 @@
 #! /usr/bin/env python
 
 from collections import deque
-import utilities, time
-import cPickle as pickle
+import utilities
+from operator import itemgetter
 
-def breadth_first_search(graph, node, num_nodes):
+def naive_search(graph, node, num_nodes):
     """
     Does a breadth-first search of the graph starting at the node.
     Returns the first num_nodes nodes (excluding direct neighbors)
     """
-    neighbors = set(graph[node])
-    looked_at = set(graph[node])
-    looked_at.add(node)
+    ranked_list = {}
     visited = []
-    queue = deque(graph[node])
-    while queue and len(visited)<num_nodes:
-        next_node = queue.popleft()
-        if next_node not in neighbors:
-            visited.append(next_node)
-        queue.extend(n for n in graph[next_node] if n not in looked_at)
-        looked_at.update(graph[next_node])
-    
+    # node contains me
+    # neighbors contain my neighbors
+    neighbors = set(graph[node])
+    small_graph = dict((k,v) for k,v in graph.iteritems() if k in neighbors)
+    print small_graph
+    raw_input('Press any key')
+    if not neighbors:
+        return visited
+    # Iterate through every element of graph
+    for element, elem_neighbors in small_graph.iteritems():
+        # Skip if it's the node or its neighbors otherwise compute common elements
+        if node != element and element not in neighbors:
+            no_common_elements = len(neighbors.intersection(elem_neighbors))
+            if no_common_elements:
+                ranked_list[element] = no_common_elements
+    sorted_list = sorted(ranked_list.items(), key=itemgetter(1), reverse=True)
+    k = num_nodes
+    for i,j in sorted_list:
+        if k > 0:
+            visited.append(i)
+            k = k - 1
     return visited
 
-def bfs_benchmark(train_file, test_file, submission_file, num_predictions):
+    
+def naive_benchmark(train_file, test_file, submission_file, num_predictions):
     """
     Runs the breadth-first search benchmark.
     """
     graph = utilities.read_graph(train_file)
-    output = open('graph.pkl', 'wb')
-    pickle.dump(graph, output, protocol=2)
-    output.close()
     test_nodes = utilities.read_nodes_list(test_file)
-    start_time = time.time()
-    test_predictions = [breadth_first_search(graph, node, num_predictions)
+    test_predictions = [naive_search(graph, node, num_predictions)
                         for node in test_nodes]
-    print time.time() - start_time, "seconds"
     utilities.write_submission_file(submission_file, 
                                     test_nodes, 
                                     test_predictions)
 
 if __name__=="__main__":
-    bfs_benchmark("../Data/train.csv",
-                  "../Data/test.csv",
-                  "../Submissions/bfs_benchmark_updated.csv",
+    naive_benchmark("../Data/train.csv",
+                  "../Data/smalltest.csv",
+                  "../Submissions/naive_benchmark.csv",
                   10)
