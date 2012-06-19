@@ -6,7 +6,7 @@ import time
 import cPickle as pickle
 from operator import itemgetter
 
-def naive_search(graph, reversegraph, node, num_nodes):
+def jaccard_search(graph, reversegraph, node, num_nodes):
     """
     Does a breadth-first search of the graph starting at the node.
     Returns the first num_nodes nodes (excluding direct neighbors)
@@ -31,17 +31,23 @@ def naive_search(graph, reversegraph, node, num_nodes):
     
     if neighbors:
         small_graph = dict((k, graph[k]) for k in neighbors)
-        listofallpossibilities = [item for sublist in small_graph.values() for item in sublist]
+        friendsoffriends = [item for sublist in small_graph.values() for item in sublist]
 
-        for every_possible_candidate in listofallpossibilities:
-            ranked_list[every_possible_candidate] +=  1
+        friendsoffriends = set(friendsoffriends) - neighbors
+        
+        for everyfof in friendsoffriends:
+            fofneighbors = set(graph[everyfof])
+            ranked_list[everyfof] = len(fofneighbors & neighbors) / len(fofneighbors | neighbors)
+        
+        # for every_possible_candidate in friendsoffriends:
+            # ranked_list[every_possible_candidate] +=  1
         
         if node in ranked_list:
             del ranked_list[node]
         
-        for neighbor in neighbors:
-            if neighbor in ranked_list:
-                del ranked_list[neighbor]
+        # for neighbor in neighbors:
+            # if neighbor in ranked_list:
+                # del ranked_list[neighbor]
             
         sorted_list = sorted(ranked_list.items(), key=itemgetter(1), reverse=True)
         
@@ -58,7 +64,7 @@ def loadgraphfrompickle(filename):
     pkl_file.close()
     return graph
     
-def naive_benchmark(train_file, test_file, submission_file, num_predictions):
+def jaccard_benchmark(train_file, test_file, submission_file, num_predictions):
     """
     Runs the breadth-first search benchmark.
     """
@@ -68,10 +74,10 @@ def naive_benchmark(train_file, test_file, submission_file, num_predictions):
     print "Graph forming time = ", time.time() - start_time, "seconds"
     start_time = time.time()
     test_nodes = utilities.read_nodes_list(test_file)
-    test_predictions = [naive_search(graph, reversegraph, node, num_predictions)
+    test_predictions = [jaccard_search(graph, reversegraph, node, num_predictions)
                         for node in test_nodes]
-    print "Prediction time = ", time.time() - start_time, "seconds"
     
+    print "Prediction time = ", time.time() - start_time, "seconds"
 
     utilities.write_submission_file(submission_file, 
                                     test_nodes, 
@@ -79,7 +85,7 @@ def naive_benchmark(train_file, test_file, submission_file, num_predictions):
     
     
 if __name__=="__main__":
-    naive_benchmark("../Data/train.csv",
+    jaccard_benchmark("../Data/train.csv",
                   "../Data/test.csv",
-                  "../Submissions/missinglinks_rankedlist_bothways.csv",
+                  "../Submissions/jaccard_benchmark.csv",
                   10)
